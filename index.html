@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#315efb" />
+  <title>平方數 20 連戰</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;padding:18px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:linear-gradient(145deg,#eaf1ff,#f8fbff);color:#172033;display:flex;align-items:center;justify-content:center}
+    .game{width:100%;max-width:620px;background:#fff;border-radius:26px;overflow:hidden;box-shadow:0 18px 50px rgba(40,70,140,.18)}
+    header{padding:24px;text-align:center;color:#fff;background:linear-gradient(135deg,#315efb,#7065ff)} h1{margin:0;font-size:30px} header p{margin:8px 0 0;opacity:.9}
+    main{padding:22px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{padding:10px 5px;text-align:center;background:#f3f6ff;border-radius:14px}.label{display:block;color:#69748d;font-size:12px}.value{font-size:19px;font-weight:800}
+    .track{height:12px;margin-top:16px;background:#e7ecf6;border-radius:20px;overflow:hidden}.bar{width:0;height:100%;background:linear-gradient(90deg,#17a66a,#50d49b);transition:width .25s}
+    .prompt{margin-top:28px;text-align:center;color:#69748d}.question{margin:8px 0 24px;text-align:center;color:#315efb;font-size:86px;font-weight:900;line-height:1}.question sup{font-size:32px}
+    .row{display:flex;gap:10px}input{width:100%;min-width:0;padding:15px;border:2px solid #dfe5f0;border-radius:15px;outline:none;font-size:25px;font-weight:800;text-align:center}input:focus{border-color:#315efb;box-shadow:0 0 0 4px rgba(49,94,251,.1)}
+    button{border:0;border-radius:15px;color:#fff;background:#315efb;font-size:18px;font-weight:800;cursor:pointer;touch-action:manipulation}#submit{min-width:105px;padding:0 18px}button:active{transform:scale(.98)}
+    #feedback{min-height:30px;margin-top:14px;text-align:center;font-size:17px;font-weight:800}.ok{color:#13965e}.bad{color:#e34359}.hint{text-align:center;color:#7b8498;font-size:13px}
+    .overlay{display:none;position:fixed;inset:0;z-index:10;padding:20px;background:rgba(20,28,45,.65);align-items:center;justify-content:center}.overlay.show{display:flex}.card{width:100%;max-width:430px;padding:30px 24px;border-radius:24px;background:#fff;text-align:center}.trophy{font-size:64px}.card h2{margin:8px 0;font-size:30px}.card p{color:#69748d;font-size:17px;line-height:1.8}.restart{width:100%;padding:14px;margin-top:12px}
+    @media(max-width:480px){body{padding:10px}.game{border-radius:20px}main{padding:16px}.question{font-size:72px}.row{flex-direction:column}#submit{min-height:54px}}
+  </style>
+</head>
+<body>
+  <section class="game">
+    <header><h1>平方數 20 連戰</h1><p>完成 11～30 的所有平方數即可過關</p></header>
+    <main>
+      <div class="stats">
+        <div class="stat"><span class="label">進度</span><span class="value" id="progressText">0/20</span></div>
+        <div class="stat"><span class="label">連勝</span><span class="value" id="streakText">0</span></div>
+        <div class="stat"><span class="label">錯誤</span><span class="value" id="wrongText">0</span></div>
+        <div class="stat"><span class="label">時間</span><span class="value" id="timeText">0秒</span></div>
+      </div>
+      <div class="track"><div class="bar" id="progressBar"></div></div>
+      <div class="prompt">請回答下列數字的平方</div>
+      <div class="question"><span id="number">12</span><sup>2</sup></div>
+      <div class="row">
+        <input id="answer" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="輸入答案" autocomplete="off" />
+        <button id="submit" type="button">送出</button>
+      </div>
+      <div id="feedback"></div><div class="hint">按「送出」或鍵盤 Enter</div>
+    </main>
+  </section>
+  <div class="overlay" id="resultScreen"><div class="card"><div class="trophy">🏆</div><h2>恭喜過關！</h2><p id="resultText"></p><button class="restart" id="restart" type="button">再玩一次</button></div></div>
+<script>
+(function(){
+  'use strict';
+  const TOTAL=20,$=id=>document.getElementById(id);
+  let nums=[],current=0,done=0,streak=0,best=0,wrong=0,start=0,timer=null,locked=false;
+  const el={number:$('number'),answer:$('answer'),submit:$('submit'),feedback:$('feedback'),progressText:$('progressText'),streakText:$('streakText'),wrongText:$('wrongText'),timeText:$('timeText'),bar:$('progressBar'),screen:$('resultScreen'),result:$('resultText'),restart:$('restart')};
+  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+  function stats(){el.progressText.textContent=`${done}/${TOTAL}`;el.streakText.textContent=streak;el.wrongText.textContent=wrong;el.bar.style.width=`${done/TOTAL*100}%`}
+  function next(){current=nums[done];el.number.textContent=current;el.answer.value='';el.feedback.textContent='';el.feedback.className='';locked=false;el.answer.disabled=false;el.submit.disabled=false;setTimeout(()=>el.answer.focus(),80)}
+  function submit(){if(locked)return;const raw=el.answer.value.trim();if(!raw){el.feedback.textContent='請先輸入答案';el.feedback.className='bad';el.answer.focus();return}const ans=Number(raw),correct=current*current;if(ans===correct){locked=true;done++;streak++;best=Math.max(best,streak);el.feedback.textContent='答對了！';el.feedback.className='ok';stats();done>=TOTAL?setTimeout(finish,350):setTimeout(next,350)}else{wrong++;streak=0;el.feedback.textContent=`再試一次，${current} × ${current} 不是 ${ans}`;el.feedback.className='bad';el.answer.select();stats()}}
+  function finish(){clearInterval(timer);const sec=Math.floor((Date.now()-start)/1000),accuracy=Math.round(TOTAL/(TOTAL+wrong)*100);const old=Number(localStorage.getItem('squareBest')||0);if(!old||sec<old)localStorage.setItem('squareBest',String(sec));const record=Number(localStorage.getItem('squareBest'));el.result.innerHTML=`完成時間：<strong>${sec} 秒</strong><br>錯誤次數：<strong>${wrong} 次</strong><br>最高連勝：<strong>${best} 題</strong><br>正確率：<strong>${accuracy}%</strong><br>最佳紀錄：<strong>${record} 秒</strong>`;el.screen.classList.add('show')}
+  function startGame(){clearInterval(timer);nums=shuffle(Array.from({length:20},(_,i)=>i+11));done=streak=best=wrong=0;locked=false;start=Date.now();el.screen.classList.remove('show');stats();next();el.timeText.textContent='0秒';timer=setInterval(()=>el.timeText.textContent=Math.floor((Date.now()-start)/1000)+'秒',1000)}
+  el.submit.addEventListener('click',submit);el.answer.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});el.restart.addEventListener('click',startGame);startGame();
+})();
+</script>
+</body>
+</html>
