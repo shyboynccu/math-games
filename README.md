@@ -17,3 +17,5 @@
 3. 在 **Build and deployment** 將 Source 設為 **Deploy from a branch**。
 4. Branch 選擇 **main**，資料夾選擇 **/(root)**。
 5. 按 **Save**。
+
+6. （Redeploy)
